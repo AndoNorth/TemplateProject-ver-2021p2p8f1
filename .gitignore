@@ -4,6 +4,7 @@
 [Bb]uild/
 [Bb]uilds/
 Assets/AssetStoreTools*
+Assets/TextMesh Pro*
 
 # Visual Studio cache directory
 .vs/
@@ -35,3 +36,5 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+.collabignore
+.vsconfig
