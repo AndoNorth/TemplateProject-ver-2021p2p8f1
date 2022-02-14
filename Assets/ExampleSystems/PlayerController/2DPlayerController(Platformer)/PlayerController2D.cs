@@ -9,31 +9,41 @@ namespace TemplateProject
     {
         namespace PlayerController2D_Platformer
         {
-            public class PlayerController2D : MonoBehaviour, IPlayerController2D
+            public class PlayerController2D : MonoBehaviour, IPlayerController
             {
+                // input
                 Vector2 _inputVector;
-                private Rigidbody2D _rb;
-                private CapsuleCollider2D _cCollider;
                 // custom collider
-                private int _noCollisionPoints;
                 private CustomColliderRange _topRays, _bottomRays, _leftRays, _rightRays;
                 private bool _topCol, _bottomCol, _leftCol, _rightCol;
-                [Header("COLLISION")] [SerializeField] private Bounds _characterBounds;
+                [Header("COLLISION")]
+                [SerializeField] private Bounds _characterBounds;
                 [SerializeField] private Vector3 _characterSize;
+                [SerializeField] private int _noCollisionPoints = 3;
                 [SerializeField] private LayerMask _collidable;
                 [SerializeField] private float _detectionRayLength = 0.1f;
                 [SerializeField] [Range(0.1f, 0.3f)] private float _rayBuffer = 0.1f; // minor lee-way so that side colliders dont overlap with bottom
+                [SerializeField] LayerMask _groundLayer;
+                [SerializeField] int _freeColliderIterations = 10;
                 // IPlayerController2D
-                public Vector2 Velocity => _rb.velocity;
+                private float _currentHorizontalSpeed;
+                private float _currentVerticalSpeed;
+                private Vector3 RawMovement;
+                public Vector3 Velocity => new Vector2(_currentHorizontalSpeed, _currentVerticalSpeed);
                 public FrameInputs Inputs { get; private set; }
                 public bool Grounded => _bottomCol;
                 // state machine
                 private StateMachine _stateMachine;
+                private string _currentState, _previousState;
+                public string CurrentState { get { return _currentState; } }
+                public string PreviousState { get { return _previousState; } }
                 private void Awake()
                 {
-                    _rb = transform.GetComponent<Rigidbody2D>();
-                    _cCollider = transform.GetComponent<CapsuleCollider2D>();
-                    _characterBounds = _cCollider.bounds;
+                    //_rb = transform.GetComponent<Rigidbody2D>();
+                    //_cCollider = transform.GetComponent<CapsuleCollider2D>();
+                    //_characterBounds = _cCollider.bounds;
+                    _characterBounds.extents = transform.localScale * 0.5f;
+                    _characterBounds.center = transform.localPosition;
                     _characterSize = _characterBounds.size;
                 }
                 private void Update()
@@ -42,9 +52,10 @@ namespace TemplateProject
                 }
                 private void FixedUpdate()
                 {
+                    RunCollisionChecks();
                 }
                 // state machine example - using a basic one first, transition to this if required
-                void SetupStateMachine()
+                private void SetupStateMachine()
                 {
                     // shortcut to add transition
                     void At(IState from, IState to, Func<bool> condition) => _stateMachine.addTransition(from, to, condition);
@@ -77,17 +88,64 @@ namespace TemplateProject
                     Func<bool> IsResetSet() => () => ResetBool;
                     */
                 }
-                private void AddMomentum(Vector2 force)
+                private void MoveCharacter()
                 {
-                    _rb.AddForce(force);
+                    Vector3 currentPosition = transform.position + _characterBounds.center;
+                    RawMovement = new Vector3(_currentHorizontalSpeed, _currentVerticalSpeed);
+                    Vector3 movement = RawMovement * Time.deltaTime;
+                    Vector3 furthestPoint = currentPosition + movement;
+
+                    Collider2D hit = Physics2D.OverlapBox(furthestPoint, _characterSize, 0, _groundLayer);
+                    if (!hit)
+                    {
+                        transform.position += movement;
+                        return;
+                    }
+
+                    Vector3 positionToMoveTo = transform.position;
+                    for(int i = 1; i < _freeColliderIterations; i++)
+                    {
+                        float t = (float)i / _freeColliderIterations;
+                        Vector2 positionToTry = Vector2.Lerp(currentPosition, furthestPoint, t);
+
+                        if(Physics2D.OverlapBox(positionToTry, _characterSize, 0, _groundLayer))
+                        {
+                            transform.position = positionToMoveTo;
+                            if(i == 1)
+                            {
+                                if(_currentVerticalSpeed < 0)
+                                {
+                                    _currentVerticalSpeed = 0;
+                                }
+                                Vector3 dir = transform.position - hit.transform.position;
+                                transform.position += dir.normalized * movement.magnitude;
+                            }
+                            return;
+                        }
+                        positionToMoveTo = positionToTry;
+                    }
                 }
-                private void SetMomentum(Vector2 force)
+                public void AddSpeed(Vector2 speed)
                 {
-                    _rb.velocity = force;
+                    _currentHorizontalSpeed += speed.x;
+                    _currentVerticalSpeed += speed.y;
+                }
+                public void SetSpeed(Vector2 speed)
+                {
+                    _currentHorizontalSpeed = speed.x;
+                    _currentVerticalSpeed = speed.y;
                 }
                 public void SetInputs(FrameInputs inputs)
                 {
                     Inputs = inputs;
+                }
+                public void SetCurrentState(string state)
+                {
+                    _previousState = state;
+                }
+                public void SetPreviousState(string state)
+                {
+                    _previousState = state;
                 }
                 private void RunCollisionChecks()
                 {
@@ -116,19 +174,19 @@ namespace TemplateProject
                     // if not using collider, need to calculate new colliders
                     // _characterBounds = new Bounds(transform.position + _characterBounds.center, _characterBounds.size); // not sure if i understand this
 
-                    _topRays    = new CustomColliderRange(_characterBounds.min.x + _rayBuffer, _characterBounds.max.y, _characterBounds.max.x - _rayBuffer, _characterBounds.max.y, Vector2.up);
+                    _topRays = new CustomColliderRange(_characterBounds.min.x + _rayBuffer, _characterBounds.max.y, _characterBounds.max.x - _rayBuffer, _characterBounds.max.y, Vector2.up);
                     _bottomRays = new CustomColliderRange(_characterBounds.min.x + _rayBuffer, _characterBounds.min.y, _characterBounds.max.x - _rayBuffer, _characterBounds.min.y, Vector2.down);
-                    _leftRays   = new CustomColliderRange(_characterBounds.min.x, _characterBounds.min.y + _rayBuffer, _characterBounds.min.x, _characterBounds.max.y - _rayBuffer, Vector2.left);
-                    _rightRays  = new CustomColliderRange(_characterBounds.max.x, _characterBounds.min.y + _rayBuffer, _characterBounds.max.x, _characterBounds.max.y - _rayBuffer, Vector2.right);
+                    _leftRays = new CustomColliderRange(_characterBounds.min.x, _characterBounds.min.y + _rayBuffer, _characterBounds.min.x, _characterBounds.max.y - _rayBuffer, Vector2.left);
+                    _rightRays = new CustomColliderRange(_characterBounds.max.x, _characterBounds.min.y + _rayBuffer, _characterBounds.max.x, _characterBounds.max.y - _rayBuffer, Vector2.right);
                 }
                 private void OnDrawGizmos()
                 {
-                    DrawGizmoCharacterBounds();
                     if (!Application.isPlaying)
                     {
-                        DrawGizmoInputVector();
+                        DrawGizmoCharacterBounds();
                         DrawGizmoCustomColliderRays();
                     }
+                    DrawGizmoInputVector();
                 }
                 private void DrawGizmoCharacterBounds()
                 {
@@ -138,7 +196,7 @@ namespace TemplateProject
                 private void DrawGizmoCustomColliderRays()
                 {
                     CalculateCustomColliderRanges();
-                    Gizmos.color = Color.blue;
+                    Gizmos.color = Color.magenta;
                     foreach (var range in new List<CustomColliderRange> { _topRays, _bottomRays, _leftRays, _rightRays })
                     {
                         foreach (var point in EvaluateRayPositions(range))
@@ -152,53 +210,53 @@ namespace TemplateProject
                 {
                     float gapFromPlayer = 0.1f;
                     Vector3 boxSize = new Vector3(0.3f, 0.3f);
-                    Vector3 xDiff = new Vector3(_cCollider.bounds.extents.x + gapFromPlayer + boxSize.x, 0, 0);
-                    Vector3 yDiff = new Vector3(0, _cCollider.bounds.extents.y + gapFromPlayer + boxSize.y, 0);
+                    Vector3 xDiff = new Vector3(_characterBounds.extents.x + gapFromPlayer + boxSize.x, 0, 0);
+                    Vector3 yDiff = new Vector3(0, _characterBounds.extents.y + gapFromPlayer + boxSize.y, 0);
                     Gizmos.color = Color.blue;
                     if (_inputVector.x > 0 && _inputVector.y > 0)
                     {
                         // up left
-                        Gizmos.DrawWireCube(_cCollider.bounds.center - xDiff + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center - xDiff + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else if (_inputVector.x < 0 && _inputVector.y > 0)
                     {
                         // up right
-                        Gizmos.DrawWireCube(_cCollider.bounds.center + xDiff + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center + xDiff + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else if (_inputVector.x > 0 && _inputVector.y < 0)
                     {
                         // down left
-                        Gizmos.DrawWireCube(_cCollider.bounds.center - xDiff - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center - xDiff - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else if (_inputVector.x < 0 && _inputVector.y < 0)
                     {
                         // down right
-                        Gizmos.DrawWireCube(_cCollider.bounds.center + xDiff - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center + xDiff - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else if (_inputVector.y > 0)
                     {
                         // up
-                        Gizmos.DrawWireCube(_cCollider.bounds.center + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else if (_inputVector.y < 0)
                     {
                         // down
-                        Gizmos.DrawWireCube(_cCollider.bounds.center - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else if (_inputVector.x > 0)
                     {
                         // left
-                        Gizmos.DrawWireCube(_cCollider.bounds.center - xDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center - xDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else if (_inputVector.x < 0)
                     {
                         // right
-                        Gizmos.DrawWireCube(_cCollider.bounds.center + xDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center + xDiff, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                     else
                     {
                         // none
-                        Gizmos.DrawWireCube(_cCollider.bounds.center, new Vector3(boxSize.y, boxSize.x, 0));
+                        Gizmos.DrawWireCube(_characterBounds.center, new Vector3(boxSize.y, boxSize.x, 0));
                     }
                 }
             }
@@ -228,9 +286,9 @@ namespace TemplateProject
                 }
                 public readonly Vector2 Start, End, RayDirection;
             }
-            public interface IPlayerController2D
+            public interface IPlayerController
             {
-                public Vector2 Velocity { get; }
+                public Vector3 Velocity { get; }
                 public FrameInputs Inputs { get; }
                 public bool Grounded { get; }
             }
@@ -253,6 +311,48 @@ namespace TemplateProject
                 public bool HeavyAttackUp;
                 public bool OtherDown;
                 public bool OtherUp;
+            }
+            // states
+            class TemplateState : IState
+            {
+                string stateName = "Template State";
+                public TemplateState()
+                {
+
+                }
+                public void Tick()
+                {
+
+                }
+                public void OnEnter()
+                {
+                    TextPopup.Create(new Vector3(0, 4), "Entered State: " + stateName, 12, Vector3.zero, TextPopup.TextPopupEffect.NONE, 0f, 1f);
+                }
+                public void OnExit()
+                {
+                    TextPopup.Create(new Vector3(0, 4), "Entered State: " + stateName, 12, Vector3.zero, TextPopup.TextPopupEffect.NONE, 0f, 1f);
+                }
+            }
+            class IdleState : IState
+            {
+                string stateName = "Idle State";
+                PlayerController2D _playerController2D;
+                public IdleState(PlayerController2D playerController2D)
+                {
+                    _playerController2D = playerController2D;
+                }
+                public void Tick()
+                {
+
+                }
+                public void OnEnter()
+                {
+                    TextPopup.Create(new Vector3(0, 4), "Entered State: " + stateName, 12, Vector3.zero, TextPopup.TextPopupEffect.NONE, 0f, 1f);
+                }
+                public void OnExit()
+                {
+                    TextPopup.Create(new Vector3(0, 4), "Entered State: " + stateName, 12, Vector3.zero, TextPopup.TextPopupEffect.NONE, 0f, 1f);
+                }
             }
         }
     }

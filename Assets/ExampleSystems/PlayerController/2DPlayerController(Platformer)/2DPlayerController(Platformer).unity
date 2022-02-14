@@ -169,7 +169,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 1.7769607, y: 1}
+    m_SensorSize: {x: 1.7777778, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0
@@ -1502,6 +1502,42 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _rayBuffer
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _characterSize.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _characterSize.y
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _characterSize.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _collidable.m_Bits
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _characterBounds.m_Center.y
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _characterBounds.m_Extent.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _characterBounds.m_Extent.y
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339339, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4746141784574339340, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
       propertyPath: m_RootOrder
       value: 2
@@ -1556,4 +1592,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4746141784574339337, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+    - {fileID: 4746141784574339339, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+    - {fileID: 4746141784574339336, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
