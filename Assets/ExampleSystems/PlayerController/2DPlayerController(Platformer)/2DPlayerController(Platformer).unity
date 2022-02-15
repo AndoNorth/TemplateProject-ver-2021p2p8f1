@@ -203,7 +203,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 168644418}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Level
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -249,7 +249,7 @@ GameObject:
   - component: {fileID: 519270280}
   - component: {fileID: 519270282}
   - component: {fileID: 519270281}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Floor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -360,7 +360,7 @@ GameObject:
   - component: {fileID: 646352121}
   - component: {fileID: 646352123}
   - component: {fileID: 646352122}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -471,7 +471,7 @@ GameObject:
   - component: {fileID: 918402227}
   - component: {fileID: 918402229}
   - component: {fileID: 918402228}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Wall_Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -582,7 +582,7 @@ GameObject:
   - component: {fileID: 930117536}
   - component: {fileID: 930117538}
   - component: {fileID: 930117537}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Platform_04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -693,7 +693,7 @@ GameObject:
   - component: {fileID: 979872946}
   - component: {fileID: 979872948}
   - component: {fileID: 979872947}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Platform_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -924,7 +924,7 @@ GameObject:
   - component: {fileID: 1183953965}
   - component: {fileID: 1183953967}
   - component: {fileID: 1183953966}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Platform_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1183,7 +1183,7 @@ GameObject:
   - component: {fileID: 1362272059}
   - component: {fileID: 1362272061}
   - component: {fileID: 1362272060}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Platform_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1395,7 +1395,7 @@ GameObject:
   - component: {fileID: 1962170687}
   - component: {fileID: 1962170689}
   - component: {fileID: 1962170688}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Wall_Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1520,7 +1520,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
       propertyPath: _collidable.m_Bits
-      value: 2147483647
+      value: 128
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _groundLayer.m_Bits
+      value: 128
+      objectReference: {fileID: 0}
+    - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
+      propertyPath: _freeColliderIterations
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4746141784574339338, guid: da429f97c9f4c80489569d9a4a337368, type: 3}
       propertyPath: _characterBounds.m_Center.y

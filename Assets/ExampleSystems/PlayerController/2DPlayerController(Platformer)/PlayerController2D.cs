@@ -11,7 +11,6 @@ namespace TemplateProject
         {
             public class PlayerController2D : MonoBehaviour, IPlayerController
             {
-                // input
                 Vector2 _inputVector;
                 // custom collider
                 private CustomColliderRange _topRays, _bottomRays, _leftRays, _rightRays;
@@ -23,7 +22,6 @@ namespace TemplateProject
                 [SerializeField] private LayerMask _collidable;
                 [SerializeField] private float _detectionRayLength = 0.1f;
                 [SerializeField] [Range(0.1f, 0.3f)] private float _rayBuffer = 0.1f; // minor lee-way so that side colliders dont overlap with bottom
-                [SerializeField] LayerMask _groundLayer;
                 [SerializeField] int _freeColliderIterations = 10;
                 // IPlayerController2D
                 private float _currentHorizontalSpeed;
@@ -39,21 +37,86 @@ namespace TemplateProject
                 public string PreviousState { get { return _previousState; } }
                 private void Awake()
                 {
-                    //_rb = transform.GetComponent<Rigidbody2D>();
-                    //_cCollider = transform.GetComponent<CapsuleCollider2D>();
-                    //_characterBounds = _cCollider.bounds;
                     _characterBounds.extents = transform.localScale * 0.5f;
                     _characterBounds.center = transform.localPosition;
                     _characterSize = _characterBounds.size;
                 }
                 private void Update()
                 {
-
+                    HandleInputs();
                 }
+
                 private void FixedUpdate()
                 {
                     RunCollisionChecks();
+
+                    CalculateHorizontalMovement();
+                    CalculateGravity();
+
+
+                    MoveCharacter();
                 }
+                private void HandleInputs()
+                {
+                    // direction intent
+                    if (Inputs.DownDown || Inputs.UpUp)
+                    {
+                        _inputVector.y -= 1;
+                    }
+                    if (Inputs.UpDown || Inputs.DownUp)
+                    {
+                        _inputVector.y += 1;
+                    }
+                    if (Inputs.LeftDown || Inputs.RightUp)
+                    {
+                        _inputVector.x -= 1;
+                    }
+                    if (Inputs.RightDown || Inputs.LeftUp)
+                    {
+                        _inputVector.x += 1;
+                    }
+                }
+                private void CalculateHorizontalMovement()
+                {
+                    if(_inputVector.x != 0)
+                    {
+                        _currentHorizontalSpeed += _inputVector.x * PlayerController2DPhysics._acceleration * Time.deltaTime;
+
+                        _currentHorizontalSpeed = Mathf.Clamp(_currentHorizontalSpeed, -PlayerController2DPhysics._maxHorizontalSpeed, PlayerController2DPhysics._maxHorizontalSpeed);
+                    }
+                    else
+                    {
+                        _currentHorizontalSpeed = Mathf.MoveTowards(_currentHorizontalSpeed, 0, PlayerController2DPhysics._deceleration * Time.deltaTime);
+                    }
+
+                    if(_currentHorizontalSpeed > 0 && _rightCol || _currentHorizontalSpeed < 0 && _leftCol)
+                    {
+                        _currentHorizontalSpeed = 0;
+                    }
+
+                }
+                private void CalculateGravity()
+                {
+                    if (_bottomCol)
+                    {
+                        if (_currentVerticalSpeed < 0)
+                        {
+                            _currentVerticalSpeed = 0;
+                        }
+                    }
+                    else
+                    {
+                        float fallSpeed = PlayerController2DPhysics._gravity * PlayerController2DPhysics._mass;
+                        
+                        _currentVerticalSpeed += fallSpeed * Time.deltaTime;
+
+                        if(_currentVerticalSpeed > PlayerController2DPhysics._maxFallSpeed)
+                        {
+                            _currentVerticalSpeed = PlayerController2DPhysics._maxFallSpeed;
+                        }
+                    }
+                }
+
                 // state machine example - using a basic one first, transition to this if required
                 private void SetupStateMachine()
                 {
@@ -92,10 +155,11 @@ namespace TemplateProject
                 {
                     Vector3 currentPosition = transform.position + _characterBounds.center;
                     RawMovement = new Vector3(_currentHorizontalSpeed, _currentVerticalSpeed);
-                    Vector3 movement = RawMovement * Time.deltaTime;
+                    Vector3 movement = RawMovement * Time.deltaTime; // movement this frame
                     Vector3 furthestPoint = currentPosition + movement;
 
-                    Collider2D hit = Physics2D.OverlapBox(furthestPoint, _characterSize, 0, _groundLayer);
+                    // if nothing hit then move and return
+                    Collider2D hit = Physics2D.OverlapBox(furthestPoint, _characterSize, 0, _collidable);
                     if (!hit)
                     {
                         transform.position += movement;
@@ -108,7 +172,7 @@ namespace TemplateProject
                         float t = (float)i / _freeColliderIterations;
                         Vector2 positionToTry = Vector2.Lerp(currentPosition, furthestPoint, t);
 
-                        if(Physics2D.OverlapBox(positionToTry, _characterSize, 0, _groundLayer))
+                        if(Physics2D.OverlapBox(positionToTry, _characterSize, 0, _collidable))
                         {
                             transform.position = positionToMoveTo;
                             if(i == 1)
@@ -171,8 +235,7 @@ namespace TemplateProject
                 }
                 private void CalculateCustomColliderRanges()
                 {
-                    // if not using collider, need to calculate new colliders
-                    // _characterBounds = new Bounds(transform.position + _characterBounds.center, _characterBounds.size); // not sure if i understand this
+                    _characterBounds = new Bounds(transform.position, _characterBounds.size);
 
                     _topRays = new CustomColliderRange(_characterBounds.min.x + _rayBuffer, _characterBounds.max.y, _characterBounds.max.x - _rayBuffer, _characterBounds.max.y, Vector2.up);
                     _bottomRays = new CustomColliderRange(_characterBounds.min.x + _rayBuffer, _characterBounds.min.y, _characterBounds.max.x - _rayBuffer, _characterBounds.min.y, Vector2.down);
@@ -212,52 +275,25 @@ namespace TemplateProject
                     Vector3 boxSize = new Vector3(0.3f, 0.3f);
                     Vector3 xDiff = new Vector3(_characterBounds.extents.x + gapFromPlayer + boxSize.x, 0, 0);
                     Vector3 yDiff = new Vector3(0, _characterBounds.extents.y + gapFromPlayer + boxSize.y, 0);
+                    Vector3 directionVector = _characterBounds.center;
                     Gizmos.color = Color.blue;
-                    if (_inputVector.x > 0 && _inputVector.y > 0)
+                    if (Inputs.Up)
                     {
-                        // up left
-                        Gizmos.DrawWireCube(_characterBounds.center - xDiff + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        directionVector += yDiff;
                     }
-                    else if (_inputVector.x < 0 && _inputVector.y > 0)
+                    if (Inputs.Down)
                     {
-                        // up right
-                        Gizmos.DrawWireCube(_characterBounds.center + xDiff + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        directionVector -= yDiff;
                     }
-                    else if (_inputVector.x > 0 && _inputVector.y < 0)
+                    if (Inputs.Left)
                     {
-                        // down left
-                        Gizmos.DrawWireCube(_characterBounds.center - xDiff - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        directionVector -= xDiff;
                     }
-                    else if (_inputVector.x < 0 && _inputVector.y < 0)
+                    if (Inputs.Right)
                     {
-                        // down right
-                        Gizmos.DrawWireCube(_characterBounds.center + xDiff - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
+                        directionVector += xDiff;
                     }
-                    else if (_inputVector.y > 0)
-                    {
-                        // up
-                        Gizmos.DrawWireCube(_characterBounds.center + yDiff, new Vector3(boxSize.y, boxSize.x, 0));
-                    }
-                    else if (_inputVector.y < 0)
-                    {
-                        // down
-                        Gizmos.DrawWireCube(_characterBounds.center - yDiff, new Vector3(boxSize.y, boxSize.x, 0));
-                    }
-                    else if (_inputVector.x > 0)
-                    {
-                        // left
-                        Gizmos.DrawWireCube(_characterBounds.center - xDiff, new Vector3(boxSize.y, boxSize.x, 0));
-                    }
-                    else if (_inputVector.x < 0)
-                    {
-                        // right
-                        Gizmos.DrawWireCube(_characterBounds.center + xDiff, new Vector3(boxSize.y, boxSize.x, 0));
-                    }
-                    else
-                    {
-                        // none
-                        Gizmos.DrawWireCube(_characterBounds.center, new Vector3(boxSize.y, boxSize.x, 0));
-                    }
+                    Gizmos.DrawWireCube(directionVector, boxSize);
                 }
             }
 
@@ -274,6 +310,7 @@ namespace TemplateProject
                 public static float _acceleration = 80f;
                 public static float _deceleration = 50f;
                 // jump
+                public static float _jumpHeight = 20f;
             }
             // custom ray struct - used to draw vector between two Vector2 s
             public struct CustomColliderRange
@@ -296,20 +333,27 @@ namespace TemplateProject
             public struct FrameInputs
             {
                 public bool UpDown;
+                public bool Up;
                 public bool UpUp;
                 public bool DownDown;
+                public bool Down;
                 public bool DownUp;
                 public bool LeftDown;
+                public bool Left;
                 public bool LeftUp;
                 public bool RightDown;
+                public bool Right;
                 public bool RightUp;
                 public bool JumpDown;
                 public bool JumpUp;
                 public bool LightAttackDown;
+                public bool LightAttack;
                 public bool LightAttackUp;
                 public bool HeavyAttackDown;
+                public bool HeavyAttack;
                 public bool HeavyAttackUp;
                 public bool OtherDown;
+                public bool Other;
                 public bool OtherUp;
             }
             // states
