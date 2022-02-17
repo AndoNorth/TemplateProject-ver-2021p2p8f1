@@ -27,6 +27,7 @@ namespace TemplateProject
                 private float _currentHorizontalSpeed;
                 private float _currentVerticalSpeed;
                 private Vector3 RawMovement;
+                private bool _jumpingThisFrame = false;
                 public Vector3 Velocity => new Vector2(_currentHorizontalSpeed, _currentVerticalSpeed);
                 public FrameInputs Inputs { get; private set; }
                 public bool Grounded => _bottomCol;
@@ -52,7 +53,7 @@ namespace TemplateProject
 
                     CalculateHorizontalMovement();
                     CalculateGravity();
-
+                    CalculateJump();
 
                     MoveCharacter();
                 }
@@ -95,6 +96,26 @@ namespace TemplateProject
                     }
 
                 }
+                private void CalculateJump()
+                {
+                    if (Inputs.JumpDown && Grounded)
+                    {
+                        _currentVerticalSpeed = PlayerController2DPhysics._jumpHeight;
+                        _jumpingThisFrame = true;
+                    }
+                    else
+                    {
+                        _jumpingThisFrame = false;
+                    }
+
+                    if (_topCol)
+                    {
+                        if(_currentVerticalSpeed > 0)
+                        {
+                            _currentVerticalSpeed = 0;
+                        }
+                    }
+                }
                 private void CalculateGravity()
                 {
                     if (_bottomCol)
@@ -116,7 +137,6 @@ namespace TemplateProject
                         }
                     }
                 }
-
                 // state machine example - using a basic one first, transition to this if required
                 private void SetupStateMachine()
                 {
@@ -215,7 +235,7 @@ namespace TemplateProject
                 {
                     CalculateCustomColliderRanges();
 
-                    _bottomCol = RunDetection(_bottomRays); // TODO: add coyote time
+                    _bottomCol = RunDetection(_bottomRays);
                     _topCol = RunDetection(_topRays);
                     _leftCol = RunDetection(_leftRays);
                     _rightCol = RunDetection(_rightRays);
@@ -296,7 +316,6 @@ namespace TemplateProject
                     Gizmos.DrawWireCube(directionVector, boxSize);
                 }
             }
-
             // custom physics variables
             public static class PlayerController2DPhysics
             {
@@ -310,7 +329,7 @@ namespace TemplateProject
                 public static float _acceleration = 80f;
                 public static float _deceleration = 50f;
                 // jump
-                public static float _jumpHeight = 20f;
+                public static float _jumpHeight = 10f;
             }
             // custom ray struct - used to draw vector between two Vector2 s
             public struct CustomColliderRange
