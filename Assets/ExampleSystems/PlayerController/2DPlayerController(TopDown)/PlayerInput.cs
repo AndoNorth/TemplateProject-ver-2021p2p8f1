@@ -11,6 +11,7 @@ namespace TemplateProject
             public class PlayerInput : MonoBehaviour
             {
                 Vector2 _inputDirection = new Vector2(0f, 0f);
+                bool _rollThisFrame = false;
                 IMoveTransform _moveTransform;
                 Vector3 _movePosition;
                 [SerializeField] [Range(1, 2)] int _inputMethod = 1;
@@ -44,7 +45,7 @@ namespace TemplateProject
                         }
                         if (Input.GetKey(KeyCode.Space))
                         {
-
+                            _rollThisFrame = true;
                         }
                     }
 

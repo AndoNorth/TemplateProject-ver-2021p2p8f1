@@ -9,7 +9,8 @@ namespace TemplateProject {
         {
             public class PlayerController2D : MonoBehaviour, IMoveTransform
             {
-                [SerializeField] float _moveSpeed = 4f;
+                [SerializeField] float _moveSpeed = 10f;
+                [SerializeField] float _rollSpeed = 50f;
                 Vector3 _moveVector;
                 Rigidbody2D _rb;
                 [SerializeField] [Range(1,2)] int _moveMethod = 1;
@@ -40,6 +41,10 @@ namespace TemplateProject {
                 {
                     _rb.velocity = _moveVector * _moveSpeed;
 
+                }
+                public void Roll()
+                {
+                    _rb.velocity = _moveVector * _rollSpeed;
                 }
                 private void MoveTransform()
                 {
